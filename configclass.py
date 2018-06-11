@@ -11,7 +11,7 @@ def config_from_file(filename, config=None):
     else:
         # We're reading config
         if os.path.isfile(filename):
-            with open(filename, 'r') as fdesc:
+            with open(filename, 'r', errors='ignore') as fdesc:
                 return json.loads(fdesc.read())
         else:
             return {}
