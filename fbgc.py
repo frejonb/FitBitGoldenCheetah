@@ -46,6 +46,7 @@ fbApi = FitBitAPI()
 
 
 # load from files
+config_from_file()
 heartrateinfo = config_from_file('heartrate.txt')
 heartrateintradayinfo = config_from_file('heartrate-intraday.txt')
 sleepinfo = config_from_file('sleep.txt')
