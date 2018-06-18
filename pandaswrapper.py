@@ -2,6 +2,7 @@ import pandas as pd
 from funcy import walk_values, partial
 from configclass import config_from_file
 from PyTlin import k
+from more_itertools import flatten
 
 def dictsOfDicts_to_dataframes(dod):
     dict_of_dfs = walk_values(pd.DataFrame, dod)
@@ -9,14 +10,18 @@ def dictsOfDicts_to_dataframes(dod):
 
 def sleep_time_series(speepfile = 'sleep.txt'):
     sleepinfo = config_from_file(speepfile)
-    return pd.DataFrame([{'dateOfSleep': sp['dateOfSleep'],
-        'minutesAsleep': sp['minutesAsleep']} for sp in sleepinfo['sleep']])
+    return pd.DataFrame(list(flatten([[{'dateOfSleep': dateOfSleep,
+        'minutesAsleep': spp['minutesAsleep']} for spp in sp]
+                                    for dateOfSleep,sp in sleepinfo.items()])))
+
+
+
 
 def intraday_hr_dataframe(heartfile = 'heartrate-intraday.txt'):
     hr = config_from_file(heartfile)
-    return dictsOfDicts_to_dataframes({info['activities-heart'][0]['dateTime']:
+    return dictsOfDicts_to_dataframes({dateTime:
         info['activities-heart-intraday']['dataset']
-                                            for info in hr})
+                                            for dateTime,info in hr.items()})
 
 
 

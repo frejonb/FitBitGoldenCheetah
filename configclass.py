@@ -1,13 +1,20 @@
 import os
 import json
 
-def config_from_file(filename, config=None):
+def config_from_file(filename, config=None, update=True):
     """Small configuration file management function."""
     if config:
         # We're writing configuration
-        with open(filename, 'w') as fdesc:
-            fdesc.write(json.dumps(config))
-        return config
+        if update:
+            #We're updating
+            json_dump = config_from_file(filename)
+            json_dump.update(config)
+            return config_from_file(filename,config = json_dump, update=False)
+        else:
+            #Just write
+            with open(filename, 'w') as fdesc:
+                fdesc.write(json.dumps(config))
+            return config
     else:
         # We're reading config
         if os.path.isfile(filename):

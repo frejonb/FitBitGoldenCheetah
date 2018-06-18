@@ -169,6 +169,22 @@ class FitBitAPI(configclass):
         return datestr if isinstance(datestr,datetime.datetime) else \
                                 datetime.datetime.strptime(datestr,'%Y-%m-%d')
 
+    def _sleep_struct(self,list):
+        struct = {}
+        [struct[x['dateOfSleep']].append(x) if struct.get(x['dateOfSleep'])
+                else struct.update({x['dateOfSleep']:[x]}) for x in list]
+        return struct
+
+    def _heart_struct(self,list):
+        struct = {}
+        [struct.update({x['dateTime']:x}) for x in list['activities-heart']]
+        return struct
+
+    def _intraday_heart_struct(self,list):
+        struct = {}
+        [struct.update({x['activities-heart'][0]['dateTime']:x}) for x in list]
+        return struct
+
     def split_dates_in_Ns(self, base_date, end_date, N):
         bd = self._get_date_obj(base_date)
         ed = self._get_date_obj(end_date)
@@ -192,31 +208,31 @@ class FitBitAPI(configclass):
                                                     for x in range(0, daydiff)]
 
     def get_heartrate_info(self, base_date = None, end_date = None):
-        return self.authd_client.time_series('activities/heart',
-                                        base_date=base_date, end_date=end_date)
+        return self._heart_struct(self.authd_client.time_series('activities/heart',
+                                        base_date=base_date, end_date=end_date))
 
     def get_intraday_heartrate_info(self, base_date = 'today',
                                 end_date = '1d',  detail_level = '1min'):
         if end_date == '1d':
-            return self.authd_client.intraday_time_series('activities/heart',
-            base_date=base_date, detail_level = detail_level)
+            return self._intraday_heart_struct([
+                self.authd_client.intraday_time_series('activities/heart',
+                base_date=base_date, detail_level = detail_level)])
         else:
             list_dates = self.date_delimiter_to_range(base_date, end_date)
             return k(list_dates) @ partial(map, lambda date:
              self.get_intraday_heartrate_info(base_date = date,
                                 end_date = '1d', detail_level = detail_level))\
-             @ list @ 'end'
-
-
+             @ list @ \
+             (lambda lst: {list(x.keys())[0]: list(x.values())[0] for x in lst})\
+              @ 'end'
 
     def get_sleep_info(self, base_date = None, end_date = None):
         list_dates = self.split_dates_in_Ns(base_date, end_date, 100)
         return k(list_dates) @ partial(map,
          lambda x: self.authd_client.time_series('sleep',
                 base_date=x['base_date'], end_date=x['end_date'])['sleep']) \
-         @ itertools.chain.from_iterable @ list @ (lambda x: {'sleep': x}) \
+         @ itertools.chain.from_iterable @ list @ self._sleep_struct \
          @ 'end'
-
 
     def update_heart_intraday(self,base_date,heartintradayfile, end_date=None):
         bdate = self._get_date_str(base_date)
@@ -224,16 +240,17 @@ class FitBitAPI(configclass):
                                 self._get_date_str(datetime.datetime.today())
 
         return self.limited_date_API_call(bdate,today,
-         lambda bd,ed: config_from_file(heartintradayfile+'--'+bd+'--'+ed+'.txt',
+         lambda bd,ed: config_from_file(heartintradayfile,
          self.get_intraday_heartrate_info(base_date=bd, end_date=ed,
-                                                        detail_level = '1sec')))
+                                            detail_level = '1sec'),update=True))
 
-    def update_heart_sleep(self, base_date, heartfile, sleepfile):
-        today = self._get_date_str(datetime.datetime.today())
+    def update_heart_sleep(self, base_date, heartfile, sleepfile, end_date=None):
+        today = self._get_date_str(end_date) if end_date else \
+                                self._get_date_str(datetime.datetime.today())
         bd = self._get_date_str(base_date)
 
         config_from_file(heartfile,
-                self.get_heartrate_info(base_date=bd, end_date=today))
+                self.get_heartrate_info(base_date=bd, end_date=today),update=True)
 
         config_from_file(sleepfile,
-                    self.get_sleep_info(base_date=bd, end_date=today))
+                    self.get_sleep_info(base_date=bd, end_date=today),update=True)

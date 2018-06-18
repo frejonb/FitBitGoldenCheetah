@@ -15,43 +15,41 @@ import glob
 from more_itertools import flatten
 
 #Fetch FitBit data
-base_date = '2017-01-26' #end_date = '2018-06-11'
-
+base_date = '2018-06-11' #end_date = '2018-06-18'
 fbApi = FitBitAPI()
-## Heartrate and sleep info
+# # Heartrate and sleep info
 # fbApi.update_heart_sleep(base_date,'heartrate.txt', 'sleep.txt')
-
-## API Request limit on heartrate intraday info
 #
+# # API Request limit on heartrate intraday info
 # try:
-#     remaining_range = fbApi.update_heart_intraday(base_date,'heartrate')
+#     remaining_range = fbApi.update_heart_intraday(base_date,'heartrate-intraday.txt')
 # except :
 #     pass
 #
-# remaining_range = ('2018-05-25', '2018-06-11')
-#
-# try:
-#     remaining_range = fbApi.update_heart_intraday(remaining_range[0],
-#                             'heartrate-intraday',end_date = remaining_range[1])
-# except:
-#     pass
-#
 # remaining_range
-#
-# config_from_file('heartrate-intraday.txt',
-#         list(flatten(map(config_from_file, glob.glob('heartrate-intraday*')))))
+
 
 
 
 
 
 # load from files
-config_from_file()
 heartrateinfo = config_from_file('heartrate.txt')
 heartrateintradayinfo = config_from_file('heartrate-intraday.txt')
 sleepinfo = config_from_file('sleep.txt')
 
+
+
+
+
+hr = heartrateintradayinfo
+hr['2018-06-10']
+
+
+
+
 sleepts = pdw.sleep_time_series('sleep.txt')
+
 #transpose, set dates as columns and sum values of same column name (nore than 1 sleep time per day)
 lel = sleepts.transpose()
 lel.columns =  lel.head(1).iloc[0,:]
@@ -62,6 +60,7 @@ lel
 lel.axes
 # I want to add the above to the table below
 sts2 = pdw.intraday_hr_series_for_sleepmin(lambda x: x<= 240)
+
 sts2.axes
 pd.concat([sts2],keys=['foo'], names=['firstlevel'])
 
@@ -72,11 +71,12 @@ pd.concat([sts2,sleepts])
 
 pd.concat([sts2,sleepts.reset_index().T], keys=[1,2])
 pdw.intraday_hr_dataframe().plot()
+pepo = pdw.intraday_hr_dataframe()
+pepo['2018-06-17'].set_index('time').plot()
 
-
-
-
-
+pipo = pepo['2018-06-17']
+pipo[(pipo.time > '03:15:00') & (pipo.time < '07:00:00')].set_index('time').plot()
+pipo[(pipo.time > '03:45:00') & (pipo.time < '03:55:00')].set_index('time').plot()
 
 #Fetch GoldeCheetah data
 gcApi = GoldenCheetahAPI()
